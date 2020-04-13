@@ -117,8 +117,37 @@ defmodule OpenApiSpex.Plug.SwaggerUI do
           request.headers["x-csrf-token"] = "<%= csrf_token %>";
           return request;
         },
-        displayOperationId: <%= display_operation_id %>
-      })
+        displayOperationId: <%= display_operation_id %>,
+        <%= if oauth[:redirect_url] do %>
+          oauth2RedirectUrl: "<%= oauth[:redirect_url] %>"
+        <% end %>
+      });
+      <%= if oauth do %>
+        ui.initOAuth({
+          clientId: "<%= oauth[:client_id] %>",
+          <%= if oauth[:client_secret] do %>
+            clientSecret: "<%= oauth[:client_secret] %>",
+          <% end %>
+          <%= if oauth[:realm] do %>
+            realm: "<%= oauth[:realm] %>",
+          <% end %>
+          <%= if oauth[:app_name] do %>
+            appName: "<%= oauth[:app_name] %>",
+          <% end %>
+          <%= if oauth[:scope_separator] do %>
+            scopeSeparator: "<%= oauth[:scope_separator] %>",
+          <% end %>
+          <%= if oauth[:additional_query_string_params] do %>
+            additionalQueryStringParams: "<%= oauth[:additional_query_string_params] %>",
+          <% end %>
+          <%= if oauth[:use_basic_authentication_with_access_code_grant] do %>
+            useBasicAuthenticationWithAccessCodeGrant: "<%= oauth[:use_basic_authentication_with_access_code_grant] %>",
+          <% end %>
+          <%= if oauth[:use_pkce_with_authorization_code_grant] do %>
+            usePkceWithAuthorizationCodeGrant: "<%= oauth[:use_pkce_with_authorization_code_grant] %>",
+          <% end %>
+        })
+      <% end %>
       window.ui = ui
     }
     </script>
@@ -142,12 +171,13 @@ defmodule OpenApiSpex.Plug.SwaggerUI do
     opts
     |> Enum.into(%{})
     |> Map.put_new(:display_operation_id, false)
+    |> Map.put_new(:oauth, nil)
   end
 
   @impl Plug
-  def call(conn, %{path: path, display_operation_id: display_operation_id}) do
+  def call(conn, opts = %{}) do
     csrf_token = Plug.CSRFProtection.get_csrf_token()
-    html = render(path, csrf_token, display_operation_id)
+    html = render(opts.path, csrf_token, opts.display_operation_id, opts.oauth)
 
     conn
     |> Plug.Conn.put_resp_content_type("text/html")
@@ -155,5 +185,11 @@ defmodule OpenApiSpex.Plug.SwaggerUI do
   end
 
   require EEx
-  EEx.function_from_string(:defp, :render, @html, [:path, :csrf_token, :display_operation_id])
+
+  EEx.function_from_string(:defp, :render, @html, [
+    :path,
+    :csrf_token,
+    :display_operation_id,
+    :oauth
+  ])
 end
