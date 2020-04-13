@@ -1,7 +1,7 @@
 defmodule PhoenixAppWeb.UserController do
   use PhoenixAppWeb, :controller
   import OpenApiSpex.Operation, only: [parameter: 5, request_body: 4, response: 3]
-  alias OpenApiSpex.Operation
+  alias OpenApiSpex.{Operation, Schema}
   alias PhoenixApp.{Accounts, Accounts.User}
   alias PhoenixAppWeb.Schemas
 
@@ -68,7 +68,10 @@ defmodule PhoenixAppWeb.UserController do
       description: "Show a user by ID",
       operationId: "UserController.show",
       parameters: [
-        parameter(:id, :path, :integer, "User ID", example: 123, minimum: 1, required: true)
+        parameter(:id, :path, %Schema{type: :integer, minimum: 1}, "User ID",
+          example: 123,
+          required: true
+        )
       ],
       responses: %{
         200 => response("User", "application/json", Schemas.UserResponse)
